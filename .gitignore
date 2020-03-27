@@ -9,6 +9,8 @@ doc/*.blg
 doc/main.pdf
 doc/plugins_generated.tex
 
+dependencies/
+
 # Build-related
 .sconf_temp
 build/release
