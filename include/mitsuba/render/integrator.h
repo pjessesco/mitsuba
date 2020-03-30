@@ -24,6 +24,8 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/shape.h>
 
+#include <array>
+
 MTS_NAMESPACE_BEGIN
 
 /**
@@ -462,7 +464,9 @@ protected:
 };
 
 
-// PACKETINTEGRATOR
+/////////////////////////////////////////////////
+//              PACKET INTEGRATOR              //
+/////////////////////////////////////////////////
 
 class MTS_EXPORT_RENDER MCPacketIntegrator : public SamplingIntegrator {
 public:
@@ -478,11 +482,13 @@ protected:
     /// Virtual destructor
     virtual ~MCPacketIntegrator() { }
 
+    virtual std::array<Spectrum, 4> Li_packet(RayPacket4 &packet, RadianceQueryRecord *rRecs) const = 0;
+
     void renderBlock(const Scene *scene, const Sensor *sensor,
         Sampler *sampler, ImageBlock *block, const bool &stop,
         const std::vector< TPoint2<uint8_t> > &points) const;
 
-protected:
+protected: 
     int m_maxDepth;
     int m_rrDepth;
     bool m_strictNormals;

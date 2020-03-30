@@ -17,6 +17,7 @@
 */
 
 #include <mitsuba/core/statistics.h>
+#include <mitsuba/core/ray_sse.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/renderproc.h>
 
@@ -240,8 +241,9 @@ void MonteCarloIntegrator::serialize(Stream *stream, InstanceManager *manager) c
     stream->writeBool(m_hideEmitters);
 }
 
-
-// PACKETINTEGRATOR
+/////////////////////////////////////////////////
+//              PACKET INTEGRATOR              //
+/////////////////////////////////////////////////
 
 MCPacketIntegrator::MCPacketIntegrator(const Properties &props) : SamplingIntegrator(props) {
     /* Depth to begin using russian roulette */
@@ -299,14 +301,17 @@ void MCPacketIntegrator::serialize(Stream *stream, InstanceManager *manager) con
 void MCPacketIntegrator::renderBlock(const Scene *scene,
         const Sensor *sensor, Sampler *sampler, ImageBlock *block,
         const bool &stop, const std::vector< TPoint2<uint8_t> > &points) const {
-
+    
     Float diffScaleFactor = 1.0f /
         std::sqrt((Float) sampler->getSampleCount());
 
     bool needsApertureSample = sensor->needsApertureSample();
     bool needsTimeSample = sensor->needsTimeSample();
 
-    RadianceQueryRecord rRec(scene, sampler);
+    RadianceQueryRecord rRecs[4] = {RadianceQueryRecord(scene, sampler),
+                                    RadianceQueryRecord(scene, sampler),
+                                    RadianceQueryRecord(scene, sampler),
+                                    RadianceQueryRecord(scene, sampler)};
     Point2 apertureSample(0.5f);
     Float timeSample = 0.5f;
     RayDifferential sensorRay;
@@ -325,24 +330,46 @@ void MCPacketIntegrator::renderBlock(const Scene *scene,
 
         sampler->generate(offset);
 
+        int idx = 0;
+
+        RayDifferential rays[4];
+        Spectrum specs[4];
+        Point2 samplePoss[4];
+
+
+        // ASSUME SPP is multiple of 4
+
         for (size_t j = 0; j<sampler->getSampleCount(); j++) {
-            rRec.newQuery(queryType, sensor->getMedium());
-            Point2 samplePos(Point2(offset) + Vector2(rRec.nextSample2D()));
+            idx = j % 4;
+            rRecs[idx].newQuery(queryType, sensor->getMedium());
+            samplePoss[idx] = Point2(Point2(offset) + Vector2(rRecs[idx].nextSample2D()));
 
             if (needsApertureSample)
-                apertureSample = rRec.nextSample2D();
+                apertureSample = rRecs[idx].nextSample2D();
             if (needsTimeSample)
-                timeSample = rRec.nextSample1D();
+                timeSample = rRecs[idx].nextSample1D();
 
-            Spectrum spec = sensor->sampleRayDifferential(
-                sensorRay, samplePos, apertureSample, timeSample);
+            specs[idx] = sensor->sampleRayDifferential(
+                sensorRay, samplePoss[idx], apertureSample, timeSample);
+
+            rays[idx] = sensorRay;
 
             sensorRay.scaleDifferential(diffScaleFactor);
 
-            spec *= Li(sensorRay, rRec);
-            block->put(samplePos, spec, rRec.alpha);
             sampler->advance();
         }
+
+        RayPacket4 packets;
+        packets.load(rays);
+        
+        Li_packet(packets, rRecs);
+        //spec *= Li(sensorRay, rRec);
+        
+        block->put(samplePoss[0], specs[0], rRecs[0].alpha);
+        block->put(samplePoss[1], specs[1], rRecs[1].alpha);
+        block->put(samplePoss[2], specs[2], rRecs[2].alpha);
+        block->put(samplePoss[3], specs[3], rRecs[3].alpha);
+
     }
 }
 

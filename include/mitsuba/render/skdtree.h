@@ -183,6 +183,8 @@ public:
     void rayIntersectPacket(const RayPacket4 &packet,
         const RayInterval4 &interval, Intersection4 &its, void *temp) const;
 
+    
+
     /**
      * \brief Fallback for incoherent rays
      * \sa rayIntesectPacket
