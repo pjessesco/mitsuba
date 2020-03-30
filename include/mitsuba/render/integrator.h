@@ -461,6 +461,34 @@ protected:
     bool m_hideEmitters;
 };
 
+
+// PACKETINTEGRATOR
+
+class MTS_EXPORT_RENDER MCPacketIntegrator : public SamplingIntegrator {
+public:
+    /// Serialize this integrator to a binary data stream
+    void serialize(Stream *stream, InstanceManager *manager) const;
+
+    MTS_DECLARE_CLASS()
+protected:
+    /// Create a integrator
+    MCPacketIntegrator(const Properties &props);
+    /// Unserialize an integrator
+    MCPacketIntegrator(Stream *stream, InstanceManager *manager);
+    /// Virtual destructor
+    virtual ~MCPacketIntegrator() { }
+
+    void renderBlock(const Scene *scene, const Sensor *sensor,
+        Sampler *sampler, ImageBlock *block, const bool &stop,
+        const std::vector< TPoint2<uint8_t> > &points) const;
+
+protected:
+    int m_maxDepth;
+    int m_rrDepth;
+    bool m_strictNormals;
+    bool m_hideEmitters;
+};
+
 MTS_NAMESPACE_END
 
 #endif /* __MITSUBA_RENDER_INTEGRATOR_H_ */
