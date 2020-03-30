@@ -21,6 +21,7 @@
 #include <mitsuba/core/statistics.h>
 #include <mitsuba/core/ray_sse.h>
 #include <array>
+#include <iostream>
 
 MTS_NAMESPACE_BEGIN
 
@@ -36,10 +37,16 @@ public:
     MIPacketTracer(Stream *stream, InstanceManager *manager)
         : MCPacketIntegrator(stream, manager) { }
 
+    // NOT USED
+    virtual Spectrum Li(const RayDifferential &ray, RadianceQueryRecord &rRec) const{
+        return Spectrum(0.0f);
+    };
+
     std::array<Spectrum, 4> Li_packet(RayPacket4 &packet, RadianceQueryRecord *rRec) const {
         /* Some aliases and local variables */
         const Scene *scene = rRec[0].scene;
         Intersection &its = rRec[0].its;
+        bool terminated[4] = {false};
         RayDifferential ray;
         std::array<Spectrum, 4> Lis;
 
@@ -55,6 +62,9 @@ public:
         //rRec.rayIntersect(ray);
 
         scene->rayIntersectPacketIncoherent(packet_, rayIntervals, itss, nullptr);
+
+        
+
 
         //ray.mint = Epsilon;
 
