@@ -242,6 +242,18 @@ public:
         return m_kdtree->rayIntersect(ray);
     }
 
+#if defined(MTS_HAS_COHERENT_RT)
+
+    inline void rayIntersectPacket(const RayPacket4 &packet, const RayInterval4 &interval, Intersection4 &its, void *tmp) const{
+        return m_kdtree->rayIntersectPacket(packet, interval, its, tmp);
+    }
+
+    inline void rayIntersectPacketIncoherent(const RayPacket4 &packet, const RayInterval4 &interval, Intersection4 &its, void *temp) const{
+        return m_kdtree->rayIntersectPacketIncoherent(packet, interval, its, temp);
+    }
+
+#endif
+
     /**
      * \brief Return the transmittance between \c p1 and \c p2 at the
      * specified time.
